@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>使用鼠标在画布上绘出矩形</title>
+</head>
+<body>
+    <canvas id="canvas1" width="512" height="384">
+        \u60a8\u7684\u6d4f\u89c8\u5668\u4e0d\u652f\u6301\u0043\u0061\u006e\u0076\u0061\u0073\uff0c\u8bf7\u66f4\u6362\uff01
+    </canvas>
+</body>
+<script>
+    var canvas = document.getElementById("canvas1");
+    var ctx = canvas.getContext("2d");
+    var rectangles = [{x : 0, y : 0, width : 0, height : 0}];
+    var movePoint = {x : '', y : '', moveType : ''};
+    //是否已经绘制图形
+    var hasDraw = false;
+    window.onload = function() {
+        strokeCanvas();
+    }
+    //绘出画布边框
+    function strokeCanvas() {
+        //var ctx = canvas.getContext("2d");
+        ctx.beginPath();
+        ctx.rect(0, 0, canvas.width, canvas.height);
+        ctx.stroke();
+        //为canvas添加监听事件
+        canvas.addEventListener("mousemove", mouseMove, false); 
+        canvas.addEventListener("mousedown", mouseDown, false); 
+        canvas.addEventListener("mouseup", mouseUp, false);
+        canvas.addEventListener("click", mouseClick, false);      
+    }
+    //鼠标移动的坐标点
+    function mouseMove(e) {
+        //console.log("鼠标移动到了点：" + getPoitOnCanvas(canvas, e.pageX, e.pageY).x + "," + getPoitOnCanvas(canvas, e.pageX, e.pageY).y);
+        point = getPoitOnCanvas(canvas, e.pageX, e.pageY);
+        var cursorStyle;
+        for(var i = 0; i < rectangles.length; i++) {
+            if ((point.x == rectangles[i].x && point.y == rectangles[i].y) || (point.x == rectangles[i].x + rectangles[i].width && point.y == rectangles[i].y + rectangles[i].height)) {
+                //document.body.style.cursor = "se-resize";
+                cursorStyle = "se-resize";
+                break;
+            } else if ((point.x == rectangles[i].x + rectangles[i].width && point.y == rectangles[i].y) || (point.x == rectangles[i].x && point.y == rectangles[i].y + rectangles[i].height)) {
+                //document.body.style.cursor = "ne-resize";
+                cursorStyle = "se-resize";
+                break;
+            } else if ((point.x >= rectangles[i].x && point.x <= rectangles[i].x + rectangles[i].width) && (point.y == rectangles[i].y || point.y == rectangles[i].y + rectangles[i].height)) {
+                //document.body.style.cursor = "n-resize";
+                cursorStyle = "se-resize";
+                break;
+            } else if ((point.y >= rectangles[i].y && point.y <= rectangles[i].y + rectangles[i].height) && (point.x == rectangles[i].x || point.x == rectangles[i].x + rectangles[i].width)) {
+                //document.body.style.cursor = "w-resize";
+                cursorStyle = "se-resize";
+                break;
+            } else {
+                //document.body.style.cursor = "auto";
+                cursorStyle = "auto";
+            }
+        }
+        document.body.style.cursor = cursorStyle;
+        movePoint = {x : point.x, y : point.y, moveType : cursorStyle};
+    }
+    //鼠标按下的坐标点
+    function mouseDown(e) {
+        //console.log("鼠标按下的点：" + getPoitOnCanvas(canvas, e.pageX, e.pageY).x + "," + getPoitOnCanvas(canvas, e.pageX, e.pageY).y);
+
+    }
+    //鼠标松开的坐标点
+    function mouseUp(e) {
+        console.log("鼠标松开的点：" + getPoitOnCanvas(canvas, e.pageX, e.pageY).x + "," + getPoitOnCanvas(canvas, e.pageX, e.pageY).y);
+    }
+    //鼠标单击的坐标点
+    function mouseClick(e) {
+        var point = getPoitOnCanvas(canvas, e.pageX, e.pageY);
+        //只有原点尚未绘制图形
+        if(rectangles.length == 1 && chk(point.x, point.y)) {
+            draw(0, 0, point.x, point.y);
+        } else {
+            //console.log("Canvas上已绘有图形，不能通过点击绘制");
+            var xIsBlank = chkIsBlank("x", point.x);
+            var yIsBlank = chkIsBlank("y", point.y);
+            if(xIsBlank.isBlank && yIsBlank.isBlank) {
+                console.log("Canvas上已绘有图形，通过点击位置无法绘出标准矩形，请重试！");
+            } else if (xIsBlank.isBlank) {
+                draw(xIsBlank.len, 0, point.x - xIsBlank.len, point.y);
+            } else if (yIsBlank.isBlank) {
+                draw(0, yIsBlank.len, point.x, point.y - yIsBlank.len);
+            }
+        }
+    }
+    //通过相对位置计算鼠标在画布上的坐标
+    function getPoitOnCanvas(canvas, x, y) {
+        var bbox = canvas.getBoundingClientRect();
+        return {
+            x : Math.round((x - bbox.left) * (canvas.width / bbox.width)),
+            y : Math.round((y - bbox.top) * (canvas.height / bbox.height))
+        }
+    }
+    //误操作勘正
+    function chk(pointX, pointY) {
+        return (Math.round(pointX / canvas.width * 100) / 100 > 0 && Math.round(pointY / canvas.height * 100) / 100 > 0);
+    }
+    //检查是否在空白处点击
+    function chkIsBlank(axis, len) {
+        var result = {isBlank : true, len : 0};
+        var l;
+        if(axis == "x") {
+            l = "width";
+        } else if (axis == "y") {
+            l = "height";
+        } else {
+            return result;
+        }
+        var maxLen;
+        for(var i = 0; result.isBlank && i < rectangles.length; i ++) {
+            //图形单一维度最大长度
+            maxLen = rectangles[i][axis] + rectangles[i][l];
+            result.len = (maxLen > result.len) ? maxLen : result.len;
+            result.isBlank = len > result.len;
+        }
+        return result;
+    }
+    //绘制矩形
+    function draw(x, y, width, height) {
+        ctx.beginPath();
+        ctx.strokeStyle = "rgba(255,0,0,0.8)";
+        ctx.strokeRect(x, y, width, height);
+        rectangles[rectangles.length] = {x : x, y : y, width : width, height : height};
+        hasDraw = true;
+    }
+</script>
+</html>
