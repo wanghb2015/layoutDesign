@@ -164,6 +164,18 @@
         }
         return chkdRect;
     }
+    //重叠检查
+    function overlapChk(x, y, w, h) {
+        for(var i = 0; i < rectangles.length; i++) {
+            if((x >= rectangles[i].x && x < rectangles[i].x + rectangles[i].width && y >= rectangles[i].y && y < rectangles[i].y + rectangles[i].height) ||
+                (x + w >= rectangles[i].x && x + w < rectangles[i].x + rectangles[i].width && y >= rectangles[i].y && y < rectangles[i].y + rectangles[i].height) ||
+                (x + w >= rectangles[i].x && x + w < rectangles[i].x + rectangles[i].width && y + h >= rectangles[i].y && y + h < rectangles[i].y + rectangles[i].height) || 
+                (x >= rectangles[i].x && x < rectangles[i].x + rectangles[i].width && y + h >= rectangles[i].y && y + h < rectangles[i].y + rectangles[i].height)) {
+                return {};
+            }
+        }
+        return {x : x, y : y, width : w, height : h};
+    }
     //检查是否在空白处点击
     function chkIsBlank(axis, len) {
         var result = {isBlank : true, len : 0};
@@ -188,6 +200,10 @@
     function draw(x, y, width, height) {
         if (Math.round(width / canvas.width * 10) / 10 <= 0 || Math.round(height / canvas.height * 10) / 10 <= 0) {
             //如果边框不足十分之一，认为是误操作
+            return;
+        }
+        if (JSON.stringify(overlapChk(x, y, width, height)) == "{}") {
+            //如果不满足重叠检查，退出操作
             return;
         }
         ctx.beginPath();
