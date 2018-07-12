@@ -12,63 +12,128 @@
 <script>
     var canvas = document.getElementById("canvas1");
     var ctx = canvas.getContext("2d");
-    var rectangles = [{x : 0, y : 0, width : 0, height : 0}];
-    var movePoint = {x : '', y : '', moveType : ''};
-    //是否已经绘制图形
-    var hasDraw = false;
+    var rectangles = [];
+    var hoverPoint = {x : '', y : '', moveType : 'auto'};
+    var pressDownPoint = {x : '', y : '', moveType : 'auto'};
     window.onload = function() {
         strokeCanvas();
     }
     //绘出画布边框
     function strokeCanvas() {
-        //var ctx = canvas.getContext("2d");
-        ctx.beginPath();
-        ctx.rect(0, 0, canvas.width, canvas.height);
-        ctx.stroke();
+        initCanvas();
         //为canvas添加监听事件
         canvas.addEventListener("mousemove", mouseMove, false); 
         canvas.addEventListener("mousedown", mouseDown, false); 
         canvas.addEventListener("mouseup", mouseUp, false);
-        canvas.addEventListener("click", mouseClick, false);      
+        // canvas.addEventListener("click", mouseClick, false);      
     }
     //鼠标移动的坐标点
     function mouseMove(e) {
         //console.log("鼠标移动到了点：" + getPoitOnCanvas(canvas, e.pageX, e.pageY).x + "," + getPoitOnCanvas(canvas, e.pageX, e.pageY).y);
-        point = getPoitOnCanvas(canvas, e.pageX, e.pageY);
-        var cursorStyle;
+        var point = getPoitOnCanvas(canvas, e.pageX, e.pageY);
+        var cursorStyle = "auto";
         for(var i = 0; i < rectangles.length; i++) {
             if ((point.x == rectangles[i].x && point.y == rectangles[i].y) || (point.x == rectangles[i].x + rectangles[i].width && point.y == rectangles[i].y + rectangles[i].height)) {
-                //document.body.style.cursor = "se-resize";
+                //光标移动到了矩形的东南向对角顶点
                 cursorStyle = "se-resize";
                 break;
             } else if ((point.x == rectangles[i].x + rectangles[i].width && point.y == rectangles[i].y) || (point.x == rectangles[i].x && point.y == rectangles[i].y + rectangles[i].height)) {
-                //document.body.style.cursor = "ne-resize";
-                cursorStyle = "se-resize";
+                //光标移动到了矩形的西南向对角顶点
+                cursorStyle = "ne-resize";
                 break;
-            } else if ((point.x >= rectangles[i].x && point.x <= rectangles[i].x + rectangles[i].width) && (point.y == rectangles[i].y || point.y == rectangles[i].y + rectangles[i].height)) {
-                //document.body.style.cursor = "n-resize";
-                cursorStyle = "se-resize";
+            } else if ((point.x > rectangles[i].x && point.x < rectangles[i].x + rectangles[i].width) && (point.y == rectangles[i].y || point.y == rectangles[i].y + rectangles[i].height)) {
+                //光标移动到了矩形平行于X轴的边
+                cursorStyle = "n-resize";
                 break;
-            } else if ((point.y >= rectangles[i].y && point.y <= rectangles[i].y + rectangles[i].height) && (point.x == rectangles[i].x || point.x == rectangles[i].x + rectangles[i].width)) {
-                //document.body.style.cursor = "w-resize";
-                cursorStyle = "se-resize";
+            } else if ((point.y > rectangles[i].y && point.y < rectangles[i].y + rectangles[i].height) && (point.x == rectangles[i].x || point.x == rectangles[i].x + rectangles[i].width)) {
+                //光标移动到了矩形平行于Y轴的边
+                cursorStyle = "w-resize";
+                break;
+            } else if (point.x > rectangles[i].x && point.x < rectangles[i].x + rectangles[i].width && point.y > rectangles[i].y && point.y < rectangles[i].y + rectangles[i].height) {
+                //光标移动到矩形框内
+                cursorStyle = "move";
                 break;
             } else {
-                //document.body.style.cursor = "auto";
+                //光标移动到了普通位置
                 cursorStyle = "auto";
             }
         }
         document.body.style.cursor = cursorStyle;
-        movePoint = {x : point.x, y : point.y, moveType : cursorStyle};
+        hoverPoint = {x : point.x, y : point.y, moveType : cursorStyle};
     }
     //鼠标按下的坐标点
     function mouseDown(e) {
         //console.log("鼠标按下的点：" + getPoitOnCanvas(canvas, e.pageX, e.pageY).x + "," + getPoitOnCanvas(canvas, e.pageX, e.pageY).y);
-
+        var point = getPoitOnCanvas(canvas, e.pageX, e.pageY);
+        pressDownPoint = {x : point.x, y : point.y, moveType : "auto"};
+        //在可移动点按下
+        if(point.x == hoverPoint.x && point.y == hoverPoint.y && hoverPoint.moveType != "auto") {
+            pressDownPoint = hoverPoint;
+        }
+        canvas.removeEventListener("mousemove", mouseMove, false); 
     }
     //鼠标松开的坐标点
     function mouseUp(e) {
-        console.log("鼠标松开的点：" + getPoitOnCanvas(canvas, e.pageX, e.pageY).x + "," + getPoitOnCanvas(canvas, e.pageX, e.pageY).y);
+        //console.log("鼠标松开的点：" + getPoitOnCanvas(canvas, e.pageX, e.pageY).x + "," + getPoitOnCanvas(canvas, e.pageX, e.pageY).y);
+        var point = getPoitOnCanvas(canvas, e.pageX, e.pageY);
+        if(pressDownPoint.moveType != "auto") {
+            //可移动点击
+            var newRect = {x : '', y : '', width : '', height : ''};
+            var newRectangles = [];
+            for(var i = 0; i < rectangles.length; i++) {
+                //防止误擦除
+                newRect = rectangles[i];
+                if (pressDownPoint.x == rectangles[i].x && pressDownPoint.y == rectangles[i].y) {
+                    //按下原点
+                    //ctx.clearRect(rectangles[i].x, rectangles[i].y, rectangles[i].width, rectangles[i].height);
+                    //ctx.strokeRect(point.x, point.y, rectangles[i].width - rectangles[i].x + point.x, rectangles[i].height - rectangles[i].y + point.y);
+                    newRect = {x : point.x, y : point.y, width : rectangles[i].width + pressDownPoint.x - point.x, height : rectangles[i].height + pressDownPoint.y - point.y};
+                } else if (pressDownPoint.x == rectangles[i].x && pressDownPoint.y == rectangles[i].y + rectangles[i].height) {
+                    //按下纵轴顶点
+                    //ctx.clearRect(rectangles[i].x, rectangles[i].y, rectangles[i].width, rectangles[i].height);
+                    newRect = {x : point.x, y : rectangles[i].y, width : rectangles[i].width + pressDownPoint.x - point.x, height : rectangles[i].height + point.y - pressDownPoint.y};
+                } else if (pressDownPoint.x == rectangles[i].x + rectangles[i].width && pressDownPoint.y == rectangles[i].y) {
+                    //按下横轴顶点
+                    newRect = {x : rectangles[i].x, y : point.y, width : rectangles[i].width + point.x - pressDownPoint.x, height : rectangles[i].height + pressDownPoint.y - point.y};
+                } else if (pressDownPoint.x == rectangles[i].x + rectangles[i].width && pressDownPoint.y == rectangles[i].y + rectangles[i].height) {
+                    //按下对角顶点
+                    newRect = {x : rectangles[i].x, y : rectangles[i].y, width : rectangles[i].width + point.x - pressDownPoint.x, height : rectangles[i].height + point.y - pressDownPoint.y};
+                } else if (pressDownPoint.x > rectangles[i].x && pressDownPoint.x < rectangles[i].x + rectangles[i].width && pressDownPoint.y == rectangles[i].y) {
+                    //按下原点横轴
+                    newRect = {x : rectangles[i].x, y : point.y, width : rectangles[i].width, height : rectangles[i].height + pressDownPoint.y - point.y};
+                } else if (pressDownPoint.y > rectangles[i].y && pressDownPoint.y < rectangles[i].y + rectangles[i].height && pressDownPoint.x == rectangles[i].x) {
+                    //按下原点纵轴
+                    newRect = {x : point.x, y : rectangles[i].y, width : rectangles[i].width + pressDownPoint.x - point.x, height : rectangles[i].height};
+                } else if (pressDownPoint.x > rectangles[i].x && pressDownPoint.x < rectangles[i].x + rectangles[i].width && pressDownPoint.y == rectangles[i].y + rectangles[i].height) {
+                    //按下对角顶点横轴
+                    newRect = {x : rectangles[i].x, y : rectangles[i].y, width : rectangles[i].width, height : rectangles[i].height + point.y - pressDownPoint.y};
+                } else if (pressDownPoint.y > rectangles[i].y && pressDownPoint.y < rectangles[i].y + rectangles[i].height && pressDownPoint.x == rectangles[i].x + rectangles[i].width) {
+                    //按下对角顶点纵轴
+                    newRect = {x : rectangles[i].x, y : rectangles[i].y, width : rectangles[i].width + point.x - pressDownPoint.x, height : rectangles[i].height};
+                } else if (pressDownPoint.x > rectangles[i].x && pressDownPoint.x < rectangles[i].x + rectangles[i].width && pressDownPoint.y > rectangles[i].y && pressDownPoint.y < rectangles[i].y + rectangles[i].height) {
+                    //在矩形内按下
+                    newRect = {x : rectangles[i].x + point.x - pressDownPoint.x, y : rectangles[i].y + point.y - pressDownPoint.y, width : rectangles[i].width, height : rectangles[i].height};
+                }
+                //擦除原图，Change by wanghb,由于框线宽度，擦除方案不完美
+                //ctx.clearRect(rectangles[i].x, rectangles[i].y, rectangles[i].width, rectangles[i].height);
+                //绘制新图
+                // draw(newRect.x, newRect.y, newRect.width, newRect.height);
+                //边界检查, 如果移出边界便擦除
+                newRect = boundChk(newRect.x, newRect.y, newRect.width, newRect.height);
+                if (JSON.stringify(newRect) != "{}") {
+                    newRectangles[newRectangles.length] = newRect;
+                }
+            }
+            //重绘
+            initCanvas();
+            for(var i = 0; i < newRectangles.length; i++) {
+                draw(newRectangles[i].x, newRectangles[i].y, newRectangles[i].width, newRectangles[i].height);
+            }
+        } else {
+            //空白区域点击
+            draw(pressDownPoint.x, pressDownPoint.y, point.x - pressDownPoint.x, point.y - pressDownPoint.y);
+        }
+        canvas.addEventListener("mousemove", mouseMove, false); 
     }
     //鼠标单击的坐标点
     function mouseClick(e) {
@@ -77,6 +142,7 @@
         if(rectangles.length == 1 && chk(point.x, point.y)) {
             draw(0, 0, point.x, point.y);
         } else {
+            /*
             //console.log("Canvas上已绘有图形，不能通过点击绘制");
             var xIsBlank = chkIsBlank("x", point.x);
             var yIsBlank = chkIsBlank("y", point.y);
@@ -87,6 +153,10 @@
             } else if (yIsBlank.isBlank) {
                 draw(0, yIsBlank.len, point.x, point.y - yIsBlank.len);
             }
+            */
+            // ctx.clearRect(rectangles[1].x, rectangles[1].y, rectangles[1].width, rectangles[1].height);
+            // ctx.clearRect(0, 0, canvas.width, canvas.height);
+            initCanvas();
         }
     }
     //通过相对位置计算鼠标在画布上的坐标
@@ -97,9 +167,27 @@
             y : Math.round((y - bbox.top) * (canvas.height / bbox.height))
         }
     }
-    //误操作勘正
-    function chk(pointX, pointY) {
-        return (Math.round(pointX / canvas.width * 100) / 100 > 0 && Math.round(pointY / canvas.height * 100) / 100 > 0);
+    //边界检查
+    function boundChk(x, y, w, h) {
+        // return (Math.round(pointX / canvas.width * 100) / 100 > 0 && Math.round(pointY / canvas.height * 100) / 100 > 0);
+        var chkdRect = {x : x, y : y, width : w, height : h};
+        if (x > canvas.width || y > canvas.height || x + w < 0 || y + h < 0) {
+            chkdRect = {};
+        } else {
+            if (x < 0) {
+                chkdRect.x = 0;
+            } 
+            if (y < 0) {
+                chkdRect.y = 0;
+            } 
+            if (x + w > canvas.width) {
+                chkdRect.width = canvas.width - x;
+            } 
+            if (y + h > canvas.height) {
+                chkdRect.height = canvas.height - y;
+            }
+        }
+        return chkdRect;
     }
     //检查是否在空白处点击
     function chkIsBlank(axis, len) {
@@ -123,11 +211,25 @@
     }
     //绘制矩形
     function draw(x, y, width, height) {
+        if (Math.round(width / canvas.width * 10) / 10 <= 0 || Math.round(height / canvas.height * 10) / 10 <= 0) {
+            //如果边框不足十分之一，认为是误操作
+            return;
+        }
         ctx.beginPath();
         ctx.strokeStyle = "rgba(255,0,0,0.8)";
+        //ctx.lineWidth = 0.5;
         ctx.strokeRect(x, y, width, height);
+        ctx.closePath();
         rectangles[rectangles.length] = {x : x, y : y, width : width, height : height};
-        hasDraw = true;
+    }
+    //初始化画布
+    function initCanvas() {
+        ctx.beginPath();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = "rgb(0, 0, 0)";
+        ctx.strokeRect(0, 0, canvas.width, canvas.height);
+        ctx.closePath();
+        rectangles = [];
     }
 </script>
 </html>
