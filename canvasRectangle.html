@@ -25,7 +25,6 @@
         canvas.addEventListener("mousemove", mouseMove, false); 
         canvas.addEventListener("mousedown", mouseDown, false); 
         canvas.addEventListener("mouseup", mouseUp, false);
-        // canvas.addEventListener("click", mouseClick, false);      
     }
     //鼠标移动的坐标点
     function mouseMove(e) {
@@ -134,30 +133,6 @@
             draw(pressDownPoint.x, pressDownPoint.y, point.x - pressDownPoint.x, point.y - pressDownPoint.y);
         }
         canvas.addEventListener("mousemove", mouseMove, false); 
-    }
-    //鼠标单击的坐标点
-    function mouseClick(e) {
-        var point = getPoitOnCanvas(canvas, e.pageX, e.pageY);
-        //只有原点尚未绘制图形
-        if(rectangles.length == 1 && chk(point.x, point.y)) {
-            draw(0, 0, point.x, point.y);
-        } else {
-            /*
-            //console.log("Canvas上已绘有图形，不能通过点击绘制");
-            var xIsBlank = chkIsBlank("x", point.x);
-            var yIsBlank = chkIsBlank("y", point.y);
-            if(xIsBlank.isBlank && yIsBlank.isBlank) {
-                console.log("Canvas上已绘有图形，通过点击位置无法绘出标准矩形，请重试！");
-            } else if (xIsBlank.isBlank) {
-                draw(xIsBlank.len, 0, point.x - xIsBlank.len, point.y);
-            } else if (yIsBlank.isBlank) {
-                draw(0, yIsBlank.len, point.x, point.y - yIsBlank.len);
-            }
-            */
-            // ctx.clearRect(rectangles[1].x, rectangles[1].y, rectangles[1].width, rectangles[1].height);
-            // ctx.clearRect(0, 0, canvas.width, canvas.height);
-            initCanvas();
-        }
     }
     //通过相对位置计算鼠标在画布上的坐标
     function getPoitOnCanvas(canvas, x, y) {
